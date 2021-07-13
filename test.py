@@ -9,7 +9,7 @@ class testIgeh(unittest.TestCase):
         username = os.environ.get("username")
         password = os.environ.get("password")
         if username and password:
-            bulkigdownloader(username, password).downloadAllPost(10)
+            BulkDownloader(username, password).downloadAllPost(10)
         print("Test skipped")
 if __name__ == '__main__':
     unittest.main()
