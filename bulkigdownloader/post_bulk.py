@@ -1,5 +1,5 @@
 from typing import Union
-from .utility import createFolder
+from .utility import createFolder, FindUsernameById
 from sys import stdout
 from instatools3 import igdownload
 from concurrent.futures import ThreadPoolExecutor
@@ -11,7 +11,10 @@ class BulkDownloader:
         self.instagram = Instagram()
         if isinstance(cookie_path, str):
             self.instagram.set_cookies(cookie_path)
-            self.instagram.session_username = self.instagram.get_account_by_id(self.instagram.user_session['ds_user_id']).username
+            try:
+                self.instagram.session_username = self.instagram.get_account_by_id(self.instagram.user_session['ds_user_id']).username
+            except Exception as e:
+                self.instagram = FindUsernameById(self.instagram.user_session['ds_user_id']).with_commentpicker
         else:
             self.instagram.with_credentials(username, password)
             self.instagram.login()
