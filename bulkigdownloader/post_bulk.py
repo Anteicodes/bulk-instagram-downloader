@@ -20,7 +20,7 @@ class BulkDownloader:
             self.instagram.login()
         self.userinfo = self.instagram.get_account_by_id(self.instagram.user_session['ds_user_id'])
 
-    def downloadAllPost(self, max=Union[bool, int]=20, worker:Union[int]=4):
+    def downloadAllPost(self, max:Union[bool, int]=20, worker:Union[int]=4):
         headers = self.instagram.generate_headers(self.instagram.user_session)
         with ThreadPoolExecutor(max_workers=int(worker)) as kuli :
             for index,i in enumerate(self.getAllPost(max), 1):
