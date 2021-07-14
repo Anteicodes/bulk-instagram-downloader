@@ -14,7 +14,7 @@ class BulkDownloader:
             try:
                 self.instagram.session_username = self.instagram.get_account_by_id(self.instagram.user_session['ds_user_id']).username
             except Exception as e:
-                self.instagram = FindUsernameById(self.instagram.user_session['ds_user_id']).with_commentpicker
+                self.instagram.session_username = FindUsernameById(self.instagram.user_session['ds_user_id']).with_commentpicker
         else:
             self.instagram.with_credentials(username, password)
             self.instagram.login()
