@@ -31,7 +31,6 @@ class BulkDownloader:
 
     @property
     def getAllPost(self)->dict:
-        data = {}
         for user in self.get_all_following:
             all_post = self.instagram.get_medias_by_user_id(user.identifier)
             for index, i in enumerate(all_post, 1):
@@ -40,7 +39,6 @@ class BulkDownloader:
                 res.update({"created_at":i.created_time})
                 stdout.flush()
                 yield {user.username:res}
-        return data
 
     def bulkPostDownloadFile(self, allUserObject, headers):
         for directory in [self.instagram.session_username, f"{self.instagram.session_username}/{allUserObject.username}", f"{self.instagram.session_username}/{allUserObject.username}/Photos", f"{self.instagram.session_username}/{allUserObject.username}/Videos"]:
