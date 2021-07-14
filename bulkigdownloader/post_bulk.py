@@ -40,6 +40,10 @@ class BulkDownloader:
             for index, i in enumerate(all_post, 1):
                 stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
                 res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
+                if not res["status"]:
+                    res = igdownload(i.link, self.instagram.generate_headers(self.instagram.user_session))
+                    if not res["status"]:
+                        res["result"] = []
                 res.update({"created_at":i.created_time})
                 stdout.flush()
                 yield {user.username:res}
