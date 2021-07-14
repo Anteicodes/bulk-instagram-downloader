@@ -18,7 +18,7 @@ if parse.type == 'post':
         bulk.downloadAllPost( parse.worker if parse.worker.isnumeric() else 3 if parse.worker else 3)
     elif parse.username and parse.password:
         bulk = BulkDownloader(parse.username, parse.password)
-        bulk.downloadAllPost(parse.max, parse.worker if parse.worker.isnumeric() else 3 if parse.worker else 3)
+        bulk.downloadAllPost(parse.max if parse.max else 20, parse.worker if parse.worker.isnumeric() else 3 if parse.worker else 3)
     else:
         os.system(f"python3 -m {dirname(__file__).split('/')[-1]} --help")
 else:
