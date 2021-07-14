@@ -1,8 +1,9 @@
+from http.cookiejar import LoadError
 from os.path import dirname
 import os
 from .post_bulk import BulkDownloader
 import argparse
-
+from .igramscraper.exception.instagram_auth_exception import InstagramAuthException
 argument = argparse.ArgumentParser(prog=f"python3 -m {dirname(__file__).split('/')[-1]}", description="IG BULKDOWNLOADER")
 argument.add_argument("--username", help="Username Account")
 argument.add_argument("--password", help="Password Account")
@@ -19,13 +20,21 @@ if parse.worker:
 else:
     worker = 3
 if parse.type == 'post':
-    if parse.token:
-        bulk=BulkDownloader(cookie_path=parse.token)
-        bulk.downloadAllPost(parse.max if parse.max else 20,worker)
-    elif parse.username and parse.password:
-        bulk = BulkDownloader(parse.username, parse.password)
-        bulk.downloadAllPost(parse.max if parse.max else 20, worker)
-    else:
-        os.system(f"python3 -m {dirname(__file__).split('/')[-1]} --help")
+    try:
+        if parse.token:
+            bulk=BulkDownloader(cookie_path=parse.token)
+            bulk.downloadAllPost(parse.max if parse.max else 20,worker)
+        elif parse.username and parse.password:
+            bulk = BulkDownloader(parse.username, parse.password)
+            bulk.downloadAllPost(parse.max if parse.max else 20, worker)
+        else:
+            os.system(f"python3 -m {dirname(__file__).split('/')[-1]} --help")
+    except InstagramAuthException:
+        print("Login Failed")
+    except FileNotFoundError:
+        print(f"'{parse.token}' File Not Found")
+    except LoadError:
+        print(f"'{parse.token}' does not look like a Netscape format cookies file")
+
 else:
     os.system(f"python3 -m {dirname(__file__).split('/')[-1]} --help")
