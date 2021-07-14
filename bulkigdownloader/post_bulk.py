@@ -3,7 +3,7 @@ from .utility import createFolder, FindUsernameById
 from sys import stdout
 from instatools3 import igdownload
 from concurrent.futures import ThreadPoolExecutor
-from igramscraper.instagram import Instagram
+from .igramscraper.instagram import Instagram
 from requests import get
 
 class BulkDownloader:
@@ -18,11 +18,12 @@ class BulkDownloader:
         else:
             self.instagram.with_credentials(username, password)
             self.instagram.login()
+        self.userinfo = self.instagram.get_account_by_id(self.instagram.user_session['ds_user_id'])
 
-    def downloadAllPost(self, worker:int):
+    def downloadAllPost(self, max=Union[bool, int]=20, worker:Union[int]=4):
         headers = self.instagram.generate_headers(self.instagram.user_session)
-        with ThreadPoolExecutor(max_workers=worker) as kuli :
-            for index,i in enumerate(self.getAllPost, 1):
+        with ThreadPoolExecutor(max_workers=int(worker)) as kuli :
+            for index,i in enumerate(self.getAllPost(max), 1):
                 stdout.write(f"\rDownload Media From {list(i)[0]} => {index}          ")
                 kuli.submit(self.bulkPostDownloadFile, i, headers).result()
                 stdout.flush()
@@ -30,13 +31,12 @@ class BulkDownloader:
 
     @property
     def get_all_following(self):
-        following=self.instagram.get_following(self.instagram.user_session["ds_user_id"])["accounts"]
+        following=self.instagram.get_following(self.userinfo.identifier, self.userinfo.follows_count, self.userinfo.follows_count)['accounts']
         return following
 
-    @property
-    def getAllPost(self)->dict:
+    def getAllPost(self, max)->dict:
         for user in self.get_all_following:
-            all_post = self.instagram.get_medias_by_user_id(user.identifier)
+            all_post = self.instagram.get_medias(user.username, user.media_count if isinstance(max, bool) else max)
             for index, i in enumerate(all_post, 1):
                 stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
                 res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
