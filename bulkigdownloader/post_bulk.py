@@ -1,3 +1,4 @@
+from .utility import createFolder
 from sys import stdout
 import os
 from instatools3 import igdownload
@@ -37,26 +38,12 @@ class BulkDownloader:
             data.update(post)
         return data
     def bulkPostDownloadFile(self, allUserObject):
-        if not os.path.isdir(self.instagram.session_username):
-            stdout.write(f"\rCreating Folder {self.instagram.session_username}          ")
-            os.mkdir(self.instagram.session_username)
-            stdout.flush()
-        if not os.path.isdir(f"{self.instagram.session_username}/{allUserObject.username}"):
-            stdout.write(f"\rCreating Folder {allUserObject.username}                    ")
-            os.mkdir(f"{self.instagram.session_username}/{allUserObject.username}")
-            stdout.flush()
-        if not os.path.isdir(f"{self.instagram.session_username}/{allUserObject.username}/post"):
-            os.mkdir(f"{self.instagram.session_username}/{allUserObject.username}/post")
+        for directory in [self.instagram.session_username, f"{self.instagram.session_username}/{allUserObject.username}", f"{self.instagram.session_username}/{allUserObject.username}/Photos", f"{self.instagram.session_username}/{allUserObject.username}/Videos"]:
+            createFolder(directory)
         for post in allUserObject.post:
-            if os.path.isdir(f"{self.instagram.session_username}/{allUserObject.username}/post/{post.created}"):
-                True
-            else:
-                stdout.write(f"\rCreating Folder {post.created}             ")
-                os.mkdir(f"{self.instagram.session_username}/{allUserObject.username}/post/{post.created}")
-                stdout.flush()
             for index, media in enumerate(post.media, 1):
                 stdout.write(f"\r Writing File      {index}/{post.media.__len__()}                     ")
-                open(f"{self.instagram.session_username}/{allUserObject.username}/post/{post.created}/{index}.{['mp4','jpg'][media.type == 'image']}", "wb").write(media.binary)
+                open(f"{self.instagram.session_username}/{allUserObject.username}/{['Videos','Photos'][media.type == 'image']}/{post.created}-{index}.{['mp4', 'jpg'][media.type == 'image'] }", "wb").write(media.binary)
                 stdout.flush()
         
 class User:
