@@ -11,6 +11,7 @@ class BulkDownloader:
         self.instagram = Instagram()
         if isinstance(cookie_path, str):
             self.instagram.set_cookies(cookie_path)
+            self.instagram.session_username = self.instagram.get_account_by_id(self.instagram.user_session['ds_user_id']).username
         else:
             self.instagram.with_credentials(username, password)
             self.instagram.login()
@@ -20,7 +21,7 @@ class BulkDownloader:
         with ThreadPoolExecutor(max_workers=worker) as kuli :
             for index,i in enumerate(self.getAllPost, 1):
                 stdout.write(f"\rDownload Media From {list(i)[0]} => {index}          ")
-                kuli.submit(self.bulkPostDownloadFile, i, headers)
+                kuli.submit(self.bulkPostDownloadFile, i, headers).result()
                 stdout.flush()
         return True
 
@@ -41,11 +42,11 @@ class BulkDownloader:
                 yield {user.username:res}
 
     def bulkPostDownloadFile(self, allUserObject, headers):
-        for directory in [self.instagram.session_username, f"{self.instagram.session_username}/{allUserObject.username}", f"{self.instagram.session_username}/{allUserObject.username}/Photos", f"{self.instagram.session_username}/{allUserObject.username}/Videos"]:
+        username = list(allUserObject)[0]
+        for directory in [self.instagram.session_username, f"{self.instagram.session_username}/{username}", f"{self.instagram.session_username}/{username}/Photos", f"{self.instagram.session_username}/{username}/Videos"]:
             createFolder(directory)
-        for post in allUserObject.keys():
-            for index, media in enumerate(allUserObject[post]['result'], 1):
-                stdout.write(f"\r Writing File      {index}/{allUserObject[post]['result'].__len__()}                     ")
-                open(f"{self.instagram.session_username}/{allUserObject.username}/{['Videos','Photos'][media['type'] == 'image']}/{post['created_at']}-{index}.{['mp4', 'jpg'][media['type'] == 'image'] }", "wb").write(get(media['url'], headers=headers).content)
+        for index, media in enumerate(allUserObject[username]['result'], 1):
+                stdout.write(f"\r Writing File      {index}/{allUserObject[username]['result'].__len__()}                     ")
+                open(f"{self.instagram.session_username}/{username}/{['Videos','Photos'][media['type'] == 'image']}/{allUserObject[username]['created_at']}-{index}.{['mp4', 'jpg'][media['type'] == 'image'] }", "wb").write(get(media['url'], headers=headers).content)
                 stdout.flush()
         
