@@ -1,3 +1,4 @@
+from typing import Union
 from .utility import createFolder
 from sys import stdout
 from instatools3 import igdownload
@@ -6,10 +7,13 @@ from igramscraper.instagram import Instagram
 from requests import get
 
 class BulkDownloader:
-    def __init__(self,username,password) -> None:
+    def __init__(self,username="",password="", cookie_path:Union[str, bool]=False) -> None:
         self.instagram = Instagram()
-        self.instagram.with_credentials(username, password)
-        self.instagram.login()
+        if isinstance(cookie_path, str):
+            self.instagram.set_cookies(cookie_path)
+        else:
+            self.instagram.with_credentials(username, password)
+            self.instagram.login()
 
     def downloadAllPost(self, worker:int):
         headers = self.instagram.generate_headers(self.instagram.user_session)
