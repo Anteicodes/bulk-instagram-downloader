@@ -12,7 +12,7 @@ from requests import get
 
 
 class BulkDownloader:
-    def __init__(self,username="",password="", cookie_path:Union[str, bool]=False, alternative:bool=False) -> None:
+    def __init__(self,username="",password="", cookie_path:Union[str, bool]=False, alternative:bool=False, instagram=None) -> None:
         self.instagram = Instagram()
         self.alternative = alternative
         if isinstance(cookie_path, str):
@@ -21,11 +21,13 @@ class BulkDownloader:
                 self.instagram.session_username = self.instagram.get_account_by_id(self.instagram.user_session['ds_user_id']).username
             except Exception as e:
                 self.instagram.session_username = FindUsernameById(self.instagram.user_session['ds_user_id']).with_commentpicker
-        else:
+        elif username and password:
             self.instagram.with_credentials(username, password)
             self.instagram.login()
+        elif instagram:
+            self.instagram = instagram
         self.userinfo = get_user_alternative(self.instagram.session_username).api() if alternative else self.instagram.get_account_by_id(self.instagram.user_session['ds_user_id'])
-
+    
     def downloadAllPost(self, max:Union[bool, int]=20, worker:Union[int]=4, selected_user=[]):
         headers = self.instagram.generate_headers(self.instagram.user_session)
         with ThreadPoolExecutor(max_workers=int(worker)) as kuli :

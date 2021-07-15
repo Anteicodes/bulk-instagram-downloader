@@ -37,7 +37,7 @@ class get_user_alternative():
             except Exception:
                 print('\r[?] Parse json Error')
                 continue
-        print('\r[x] Your Ip is Blocked ')
+        print('\r[x] Your Ip has Blocked ')
         return False
 
 class FindUsernameById:

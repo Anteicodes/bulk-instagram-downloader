@@ -1,5 +1,6 @@
 from http.cookiejar import LoadError
 from os.path import dirname
+import pickle
 import os
 from .post_bulk import BulkDownloader
 import argparse
@@ -13,20 +14,26 @@ argument.add_argument("--type", help="Bulk type e.g: post, ", type=str)
 argument.add_argument("--worker", help="default 3", type=int, default=3)
 argument.add_argument("--alternative", help="alternative method, default False", type=bool, default=False)
 argument.add_argument("--mark", help="with spesific list account use , for sparate", type=str)
+argument.add_argument('--save-cookie', help='save cookie to file')
+argument.add_argument('--load-cookie', help='Load Cookie from file')
 parse = argument.parse_args()
 BulkOptions = {"alternative":parse.alternative}
 DownloadOptions = {"selected_user":parse.mark.split(",") if parse.mark else []}
-
 if parse.type == 'post':
     try:
-        if parse.token:
-            bulk=BulkDownloader(cookie_path=parse.token, **BulkOptions)
-            bulk.downloadAllPost(parse.max if parse.max else 20,parse.worker, **DownloadOptions)
+        if parse.load_cookie:
+            BulkOptions.update({'instagram':pickle.loads(open(parse.load_cookie, 'rb').read())})
+        elif parse.token:
+            BulkOptions.update({'cookie_path':parse.token})
         elif parse.username and parse.password:
-            bulk = BulkDownloader(parse.username, parse.password, **BulkOptions)
-            bulk.downloadAllPost(parse.max if parse.max else 20, parse.worker, **DownloadOptions)
+            BulkOptions.update({'username':parse.username, 'password':parse.password})
         else:
             os.system(f"python3 -m {dirname(__file__).split('/')[-1]} --help")
+            exit(1)
+        bulk=BulkDownloader(**BulkOptions)
+        if parse.save_cookie:
+            open(parse.save_cookie, 'wb').write(pickle.dumps(bulk.instagram))
+        bulk.downloadAllPost(parse.max if parse.max else 20, parse.worker, **DownloadOptions)
     except InstagramAuthException:
         print("Login Failed")
     except FileNotFoundError:
