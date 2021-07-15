@@ -1,3 +1,4 @@
+import pickle
 from typing import Union
 import requests
 import os
@@ -10,6 +11,7 @@ def createFolder(path):
         sys.stdout.write(f"\rCreating Folder {os.path.dirname(path)}           ")
         os.mkdir(path)
         sys.stdout.flush()
+
 class get_user_alternative():
     def __init__(self, username:str, trial:int=3) -> None:
         self.username = username

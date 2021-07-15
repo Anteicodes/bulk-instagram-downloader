@@ -1,3 +1,7 @@
+from sys import exit
+from os import remove
+from os.path import isfile
+import pickle
 from typing import Union
 from .utility import createFolder, FindUsernameById, get_user_alternative
 from sys import stdout
@@ -6,7 +10,6 @@ from concurrent.futures import ThreadPoolExecutor
 from .igramscraper.instagram import Instagram
 from requests import get
 
-from bulkigdownloader.igramscraper import instagram
 
 class BulkDownloader:
     def __init__(self,username="",password="", cookie_path:Union[str, bool]=False, alternative:bool=False) -> None:
@@ -38,24 +41,87 @@ class BulkDownloader:
         return following
 
     def getAllPost(self, max, selected_user:list)->dict:
-        account_list = []
-        if selected_user:
-            for i in selected_user:
-                account_list.append( get_user_alternative(i).api() if self.alternative else self.instagram.get_account(i))
+        account_list:list = []
+        all_post:list = []
+        index:int = 0
+        u_index:int = 0
+        user = None
+        restore = False
+        if isfile("backup"):
+            while True:
+                rest = input("continue the previous task [Y/N/C/D]: ")
+                if rest.lower() == "y":
+                    restore = True
+                    break
+                elif rest.lower() == "n":
+                    restore = False
+                    break
+                elif rest.lower() == "c":
+                    exit(1)
+                elif rest.lower() == "d":
+                    remove('backup')
+                    exit(1)
+        if restore:
+            fileb = pickle.loads(open("backup","rb").read())
+            account_list = fileb["account_list"]
+            for user in fileb["all_post"].keys():
+                all_post = fileb["all_post"][user]
+                for index, i in enumerate(all_post, 1):
+                    try:
+                        stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
+                        res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
+                        if not res["status"]:
+                            res = igdownload(i.link, self.instagram.generate_headers(self.instagram.user_session))
+                            if not res["status"]:
+                                res["result"] = []
+                        res.update({"created_at":i.created_time})
+                        stdout.flush()
+                        yield {user.username:res}
+                    except Exception as e:
+                        print(e)
+                        open("backup","wb").write(pickle.dumps({"account_list":account_list[u_index:], "all_post":{user:all_post[index-1:]} if user else {}}))
+                        exit(1)
+            for u_index, user in enumerate(account_list, 1):
+                all_post = self.instagram.get_medias_by_user_id(user.identifier, int(max) if type(max) == str and max.isnumeric() else user.media_count)
+                for index, i in enumerate(all_post, 1):
+                    try:
+                        stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
+                        res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
+                        if not res["status"]:
+                            res = igdownload(i.link, self.instagram.generate_headers(self.instagram.user_session))
+                            if not res["status"]:
+                                res["result"] = []
+                        res.update({"created_at":i.created_time})
+                        stdout.flush()
+                        yield {user.username:res}
+                    except Exception as e:
+                        print(e)
+                        open("backup","wb").write(pickle.dumps({"account_list":account_list[u_index:], "all_post":{user:all_post[index-1:]} if user else {}}))
+                        exit(1)
         else:
-            account_list = self.get_all_following
-        for user in account_list:
-            all_post = self.instagram.get_medias_by_user_id(user.identifier, int(max) if type(max) == str and max.isnumeric() else user.media_count)
-            for index, i in enumerate(all_post, 1):
-                stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
-                res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
-                if not res["status"]:
-                    res = igdownload(i.link, self.instagram.generate_headers(self.instagram.user_session))
-                    if not res["status"]:
-                        res["result"] = []
-                res.update({"created_at":i.created_time})
-                stdout.flush()
-                yield {user.username:res}
+            if selected_user:
+                for i in selected_user:
+                    account_list.append( get_user_alternative(i).api() if self.alternative else self.instagram.get_account(i))
+            else:
+                account_list = self.get_all_following
+            for u_index, user in enumerate(account_list, 1):
+                all_post = self.instagram.get_medias_by_user_id(user.identifier, int(max) if type(max) == str and max.isnumeric() else user.media_count)
+                for index, i in enumerate(all_post, 1):
+                    try:
+                        ['0'][9]
+                        stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
+                        res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
+                        if not res["status"]:
+                            res = igdownload(i.link, self.instagram.generate_headers(self.instagram.user_session))
+                            if not res["status"]:
+                                res["result"] = []
+                        res.update({"created_at":i.created_time})
+                        stdout.flush()
+                        yield {user.username:res}
+                    except Exception as e:
+                        open("backup","wb").write(pickle.dumps({"account_list":account_list[u_index:], "all_post":{user:all_post[index-1:]} if user else {}}))
+                        print(e)
+                        exit(1)
 
     def bulkPostDownloadFile(self, allUserObject, headers):
         username = list(allUserObject)[0]
