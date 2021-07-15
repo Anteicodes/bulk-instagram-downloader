@@ -108,7 +108,6 @@ class BulkDownloader:
                 all_post = self.instagram.get_medias_by_user_id(user.identifier, int(max) if type(max) == str and max.isnumeric() else user.media_count)
                 for index, i in enumerate(all_post, 1):
                     try:
-                        ['0'][9]
                         stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
                         res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
                         if not res["status"]:
