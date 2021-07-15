@@ -1,1 +1,1 @@
-{"csrftoken":"1HMQvx2b5g2wXGLpRL4kpNolph7ttmXy","ds_user_id":"44940697347","rur":"LDC","sessionid":"44940697347%3A86PNxe6uIWnvYV%3A18","mid":"YO7CCAAEAAEPVNiI0qAJuilE2mpf"}
+{"csrftoken":"gAnITIQx6D8BfyApOdDUAZ2I1MbR5T3y","ds_user_id":"44940697347","rur":"PRN","sessionid":"44940697347%3AxO2ckR0pkQkvUj%3A4","mid":"YO_M6gAEAAHs-HFBfmr54VFZi_y9"}
