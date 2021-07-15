@@ -51,7 +51,30 @@ class BulkDownloader:
             for index, i in enumerate(self.getAllHighlight(selected_user=selected_user, headers=headers)):
                 for post_highlight in i:
                     pool.submit(self.highlightDownloadFile, post_highlight, headers).result()
-                
+
+    def downloadAllStory(self, worker:int=3):
+        with ThreadPoolExecutor(max_workers=worker) as gas:
+            for index, i in enumerate(self.getAllStory, 1):
+                gas.submit(self.downloadStoryFile, i).result()
+
+
+    @property
+    def getAllStory(self):
+        for user in self.get_all_following:
+            for story in self.instagram.get_stories(user.identifier):
+                for index, i in enumerate(story.stories, 1):
+                    i.__dict__.update({'created_at': i.created_time})
+                    res = {"result": [{"url": i.image_high_resolution_url if i.type == "image" else i.video_standard_resolution_url, "created_at": i.created_time, "type": i.type}]}
+                    yield {user.username: res}
+
+    def downloadStoryFile(self, storyObj):
+        username = list(storyObj)[0]
+        for directory in [self.instagram.session_username, f"{self.instagram.session_username}/{username}", f"{self.instagram.session_username}/{username}/Stories", f"{self.instagram.session_username}/{username}/Stories/Photos", f"{self.instagram.session_username}/{username}/Stories/Videos"]:
+            createFolder(directory)
+        for index, i in enumerate(storyObj[username]['result'], 1):
+            download_with_stream(i["url"], self.instagram.generate_headers(self.instagram.user_session), f"{self.instagram.session_username}/{username}/Stories/{['Photos','Videos'][i['type'] == 'video']}/{i['created_at']}.{['jpg','mp4'][i['type'] == 'video']}", f"From {username}")
+
+
     def getAllHighlight(self, selected_user:list, headers:dict):
         all_user = []
         if selected_user:
@@ -59,6 +82,7 @@ class BulkDownloader:
                 all_user.append(get_user_alternative(i).api() if self.alternative else self.instagram.get_account(i))
         for index, user in enumerate(all_user):
             yield requests.get(f"https://i.instagram.com/api/v1/highlights/{user.identifier}/highlights_tray/", headers=headers).json()["tray"]
+
     def highlightDownloadFile(self, id:dict, headers:dict):
         requests.options("https://i.instagram.com/api/v1/feed/reels_media/", params={"reel_ids":id['id']}, headers=headers)
         js=requests.get("https://i.instagram.com/api/v1/feed/reels_media/", params={"reel_ids":id['id']}, headers=headers).json()
@@ -68,8 +92,7 @@ class BulkDownloader:
                 createFolder(directory)
             for index, media in enumerate(js['reels'][id_highlight]['items']): #2:video 1:image
                 download_with_stream(media["video_versions"][0]['url'] if media["media_type"] == 2 else media["image_versions2"]['candidates'][0]['url'], headers, f'{self.instagram.session_username}/{username}/Highlight/{["Videos", "Photos"][media["media_type"]==1]}/{js["reels"][id_highlight]["created_at"]}-{index}.{["mp4", "jpg"][media["media_type"]==1]}',f'From {username} ')
-                        
-                    
+
 
     def getAllPost(self, max, selected_user:list)->dict:
         account_list:list = []
