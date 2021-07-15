@@ -10,27 +10,21 @@ argument.add_argument("--password", help="Password Account", type=str)
 argument.add_argument("--token", help="Cookie File with Netscape Format", type=str)
 argument.add_argument("--max", help="Maximum take media from posts, default 20")
 argument.add_argument("--type", help="Bulk type e.g: post, ", type=str)
-argument.add_argument("--worker", help="default 3", type=int)
+argument.add_argument("--worker", help="default 3", type=int, default=3)
 argument.add_argument("--alternative", help="alternative method, default False", type=bool, default=False)
 argument.add_argument("--mark", help="with spesific list account use , for sparate", type=str)
 parse = argument.parse_args()
 BulkOptions = {"alternative":parse.alternative}
 DownloadOptions = {"selected_user":parse.mark.split(",") if parse.mark else []}
-if parse.worker:
-    if parse.worker.isnumeric():
-        worker = int(parse.worker)
-    else:
-        worker = 3
-else:
-    worker = 3
+
 if parse.type == 'post':
     try:
         if parse.token:
             bulk=BulkDownloader(cookie_path=parse.token, **BulkOptions)
-            bulk.downloadAllPost(parse.max if parse.max else 20,worker, **DownloadOptions)
+            bulk.downloadAllPost(parse.max if parse.max else 20,parse.worker, **DownloadOptions)
         elif parse.username and parse.password:
             bulk = BulkDownloader(parse.username, parse.password, **BulkOptions)
-            bulk.downloadAllPost(parse.max if parse.max else 20, worker, **DownloadOptions)
+            bulk.downloadAllPost(parse.max if parse.max else 20, parse.worker, **DownloadOptions)
         else:
             os.system(f"python3 -m {dirname(__file__).split('/')[-1]} --help")
     except InstagramAuthException:
