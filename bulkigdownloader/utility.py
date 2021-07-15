@@ -12,6 +12,20 @@ def createFolder(path):
         os.mkdir(path)
         sys.stdout.flush()
 
+def download_with_stream(url:str, headers:dict, filename:str, text):
+    req = requests.get(url, stream=True, headers=headers)
+    total_length = req.headers.get('Content-Length')
+    downloaded = 0
+    with open(filename, "wb") as fobj:
+        for i in req.iter_content(1024):
+            fobj.write(i)
+            downloaded+=i.__len__()
+            sys.stdout.write(remove_blank(f"\rDownloading {text} => {downloaded}"+f"/{total_length}" if total_length else ""))
+            sys.stdout.flush()
+    
+def remove_blank(text:str='')->str:
+    x, y = os.get_terminal_size()
+    return text+' '*(x-text.__len__())
 class get_user_alternative():
     def __init__(self, username:str, trial:int=3) -> None:
         self.username = username
@@ -35,9 +49,11 @@ class get_user_alternative():
                 user.media_count = user_s["edge_owner_to_timeline_media"]['count']
                 return user
             except Exception:
-                print('\r[?] Parse json Error')
+                sys.stdout.write(remove_blank('\r[?] Parse json error '))
+                sys.stdout.flush()
                 continue
-        print('\r[x] Your Ip has Blocked ')
+        sys.stdout.write(remove_blank('\r[x] Your ip has blocked '))
+        sys.stdout.flush()
         return False
 
 class FindUsernameById:

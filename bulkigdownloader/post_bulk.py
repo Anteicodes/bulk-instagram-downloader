@@ -3,12 +3,16 @@ from os import remove
 from os.path import isfile
 import pickle
 from typing import Union
-from .utility import createFolder, FindUsernameById, get_user_alternative
+
+import requests
+from .utility import createFolder, FindUsernameById, get_user_alternative, download_with_stream, remove_blank
 from sys import stdout
 from instatools3 import igdownload
 from concurrent.futures import ThreadPoolExecutor
 from .igramscraper.instagram import Instagram
 from requests import get
+
+from bulkigdownloader.igramscraper import instagram
 
 
 class BulkDownloader:
@@ -32,7 +36,7 @@ class BulkDownloader:
         headers = self.instagram.generate_headers(self.instagram.user_session)
         with ThreadPoolExecutor(max_workers=int(worker)) as kuli :
             for index,i in enumerate(self.getAllPost(max, selected_user=selected_user), 1):
-                stdout.write(f"\rDownload Media From {list(i)[0]} => {index}          ")
+                stdout.write(remove_blank(f"\rDownload Media From {list(i)[0]} => {index}"))
                 kuli.submit(self.bulkPostDownloadFile, i, headers).result()
                 stdout.flush()
         return True
@@ -41,6 +45,31 @@ class BulkDownloader:
     def get_all_following(self):
         following=self.instagram.get_following(self.userinfo.identifier, self.userinfo.follows_count, self.userinfo.follows_count)['accounts']
         return following
+    def downloadAllHighlight(self, worker:int=3, selected_user:list=[]):
+        headers = self.instagram.generate_headers(self.instagram.user_session)
+        with ThreadPoolExecutor(max_workers=worker) as pool:
+            for index, i in enumerate(self.getAllHighlight(selected_user=selected_user, headers=headers)):
+                for post_highlight in i:
+                    pool.submit(self.highlightDownloadFile, post_highlight, headers).result()
+                
+    def getAllHighlight(self, selected_user:list, headers:dict):
+        all_user = []
+        if selected_user:
+            for i in selected_user:
+                all_user.append(get_user_alternative(i).api() if self.alternative else self.instagram.get_account(i))
+        for index, user in enumerate(all_user):
+            yield requests.get(f"https://i.instagram.com/api/v1/highlights/{user.identifier}/highlights_tray/", headers=headers).json()["tray"]
+    def highlightDownloadFile(self, id:dict, headers:dict):
+        requests.options("https://i.instagram.com/api/v1/feed/reels_media/", params={"reel_ids":id['id']}, headers=headers)
+        js=requests.get("https://i.instagram.com/api/v1/feed/reels_media/", params={"reel_ids":id['id']}, headers=headers).json()
+        for id_highlight in js['reels']:
+            username = js['reels'][id_highlight]['user']['username']
+            for directory in [self.instagram.session_username, f"{self.instagram.session_username}/{username}", f"{self.instagram.session_username}/{username}/Highlight", f"{self.instagram.session_username}/{username}/Highlight/Photos", f"{self.instagram.session_username}/{username}/Highlight/Videos"]:
+                createFolder(directory)
+            for index, media in enumerate(js['reels'][id_highlight]['items']): #2:video 1:image
+                download_with_stream(media["video_versions"][0]['url'] if media["media_type"] == 2 else media["image_versions2"]['candidates'][0]['url'], headers, f'{self.instagram.session_username}/{username}/Highlight/{["Videos", "Photos"][media["media_type"]==1]}/{js["reels"][id_highlight]["created_at"]}-{index}.{["mp4", "jpg"][media["media_type"]==1]}',f'From {username} ')
+                        
+                    
 
     def getAllPost(self, max, selected_user:list)->dict:
         account_list:list = []
@@ -70,7 +99,7 @@ class BulkDownloader:
                 all_post = fileb["all_post"][user]
                 for index, i in enumerate(all_post, 1):
                     try:
-                        stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
+                        stdout.write(remove_blank(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%"))
                         res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
                         if not res["status"]:
                             res = igdownload(i.link, self.instagram.generate_headers(self.instagram.user_session))
@@ -87,7 +116,7 @@ class BulkDownloader:
                 all_post = self.instagram.get_medias_by_user_id(user.identifier, int(max) if type(max) == str and max.isnumeric() else user.media_count)
                 for index, i in enumerate(all_post, 1):
                     try:
-                        stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
+                        stdout.write(remove_blank(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%"))
                         res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
                         if not res["status"]:
                             res = igdownload(i.link, self.instagram.generate_headers(self.instagram.user_session))
@@ -110,7 +139,7 @@ class BulkDownloader:
                 all_post = self.instagram.get_medias_by_user_id(user.identifier, int(max) if type(max) == str and max.isnumeric() else user.media_count)
                 for index, i in enumerate(all_post, 1):
                     try:
-                        stdout.write(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}%            ")
+                        stdout.write(remove_blank(f"\rScrapping from {user.username} => {index}/{len(all_post)} post {round((index/all_post.__len__())*100)}% "))
                         res=igdownload(i.link if i.link[-1] == "/" else i.link+"/", self.instagram.generate_headers(self.instagram.user_session))
                         if not res["status"]:
                             res = igdownload(i.link, self.instagram.generate_headers(self.instagram.user_session))
@@ -129,7 +158,5 @@ class BulkDownloader:
         for directory in [self.instagram.session_username, f"{self.instagram.session_username}/{username}", f"{self.instagram.session_username}/{username}/Photos", f"{self.instagram.session_username}/{username}/Videos"]:
             createFolder(directory)
         for index, media in enumerate(allUserObject[username]['result'], 1):
-                stdout.write(f"\r Writing File      {index}/{allUserObject[username]['result'].__len__()}                     ")
-                open(f"{self.instagram.session_username}/{username}/{['Videos','Photos'][media['type'] == 'image']}/{allUserObject[username]['created_at']}-{index}.{['mp4', 'jpg'][media['type'] == 'image'] }", "wb").write(get(media['url'], headers=headers).content)
-                stdout.flush()
+                download_with_stream(media['url'], headers, f"{self.instagram.session_username}/{username}/{['Videos','Photos'][media['type'] == 'image']}/{allUserObject[username]['created_at']}-{index}.{['mp4', 'jpg'][media['type'] == 'image'] }", username)
         
