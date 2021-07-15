@@ -37,11 +37,11 @@ try:
         bulk.downloadAllPost(parse.max if parse.max else 20, parse.worker, **DownloadOptions)
     elif parse.type == "highlight":
             bulk.downloadAllHighlight(parse.worker, **DownloadOptions)
+    else:
+        os.system(f"python3 -m {dirname(__file__).split('/')[-1]} --help")
 except InstagramAuthException:
     print("Login Failed")
 except FileNotFoundError:
     print(f"'{parse.token}' File Not Found")
 except LoadError:
     print(f"'{parse.token}' does not look like a Netscape format cookies file")
-else:
-    os.system(f"python3 -m {dirname(__file__).split('/')[-1]} --help")

@@ -155,8 +155,8 @@ class BulkDownloader:
 
     def bulkPostDownloadFile(self, allUserObject, headers):
         username = list(allUserObject)[0]
-        for directory in [self.instagram.session_username, f"{self.instagram.session_username}/{username}", f"{self.instagram.session_username}/{username}/Photos", f"{self.instagram.session_username}/{username}/Videos"]:
+        for directory in [self.instagram.session_username, f"{self.instagram.session_username}/{username}",f"{self.instagram.session_username}/{username}/Post", f"{self.instagram.session_username}/{username}/Post/Photos", f"{self.instagram.session_username}/{username}/Post/Videos"]:
             createFolder(directory)
         for index, media in enumerate(allUserObject[username]['result'], 1):
-                download_with_stream(media['url'], headers, f"{self.instagram.session_username}/{username}/{['Videos','Photos'][media['type'] == 'image']}/{allUserObject[username]['created_at']}-{index}.{['mp4', 'jpg'][media['type'] == 'image'] }", username)
+                download_with_stream(media['url'], headers, f"{self.instagram.session_username}/{username}/Post/{['Videos','Photos'][media['type'] == 'image']}/{allUserObject[username]['created_at']}-{index}.{['mp4', 'jpg'][media['type'] == 'image'] }", username)
         
